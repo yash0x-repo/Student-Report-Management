@@ -400,8 +400,6 @@ void export_CSV(){
     int roll;
     cout << "Enter Roll No. of student: ";
     cin >> roll;
-    // fstream fout(filename);
-    // fout << "Name, Roll, Course Name, Marks, Credit,\n";
      for (auto& br : branches) {
         for (auto& s : br.students) {
             if (s.roll == roll) {

@@ -451,7 +451,7 @@ void export_image(){
     cout<<"Enter Roll Number: ";
     cin>> roll;
     
-    string command = "python generate_report.py " + to_string(roll);
+    string command = "python ../python/generate_report.py " + to_string(roll);
     int result = system(command.c_str());
     if(result == 0){
         cout<<"Report Card image generated successfully. \n";

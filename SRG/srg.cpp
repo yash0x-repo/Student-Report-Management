@@ -2,6 +2,7 @@
 #include <fstream>
 #include <vector>
 #include <iomanip>
+#include <limits>
 
 using namespace std;
 
@@ -19,6 +20,7 @@ struct Course{
         else return 0;
     }
 };
+
 struct Semester{
     int sem_no;
     vector<Course> courses;
@@ -140,6 +142,15 @@ void add_branch(){
     cout<<"Branch Added! ";
 }
 
+bool existing_roll(int roll){
+    for(const auto& br:branches){
+        for(const auto& s:br.students){
+            if(s.roll==roll) return true;
+        }
+    }
+    return false;
+}
+
 void register_student(){
     if(branches.empty()){
         cout<<"No Branches Available\n Add a new branch \n";
@@ -162,6 +173,11 @@ void register_student(){
     getline(cin,s.name);
     cout<<"Enter Roll No.: ";
     cin>>s.roll;
+
+    if (existing_roll(s.roll)) {
+        cout << "A student with this roll number already exists!\n";
+        return;
+    }
 
     branches[br-1].students.push_back(s);
     cout<<"Student Registered Successfully.\n";
@@ -187,10 +203,18 @@ void addSemCourse(){
                     cout<<"Enter Course Name: ";
                     cin.ignore();
                     getline(cin, c.name);
-                    cout<<"Enter Marks: ";
+                    cout<<"Enter Marks (0-100): ";
                     cin>>c.marks;
+                    while(c.marks<0 || c.marks>100){
+                        cout<<"Invalid marks. Enter again (0-100): ";
+                        cin>>c.marks;
+                    }
                     cout<<"Enter Credits: ";
                     cin>>c.credit;
+                    while(c.credit<1){
+                        cout<<"Invalid credits, Enter again: ";
+                        cin>>c.credit;
+                    }
                     sem.courses.push_back(c);
                 }
                 sem.calculateSPI();
@@ -380,6 +404,7 @@ void removeStudent(){
     cout<<"Student with Roll No.: "<<roll<<"not found!\n";
 }
 
+
 // void Rank_students(){
 //     if(branches.empty()){
 //         cout<<"No branches available.\n";
@@ -477,11 +502,80 @@ void export_image(){
 //     }
 //     cout<<"Student with Roll No. "<<roll<<"not found!\n";
 // }
+void saveData(const string& file_name){
+    ofstream fout(file_name);
+    if(!fout.is_open()){
+        cout<<"Failed to open file for saving.\n";
+        return;
+    }
+    fout<<branches.size()<<"\n";
+    for(auto & br:branches){
+        fout<<br.name<<"\n"<<br.students.size()<<"\n";
+        for(auto& s:br.students){
+            fout<<s.name<<"\n"<<s.roll<<"\n"<<s.semesters.size()<<"\n";
+            for(auto& sem:s.semesters){
+                fout<<sem.sem_no<<"\n"<<sem.courses.size()<<"\n";
+                for(auto& c:sem.courses){
+                    fout<<c.name<<"\n"<<c.marks<<"\n"<<c.credit<<"\n";
+                }
+            }
+        }
+    }
+    fout.close();
+    cout<<"Data Saved Successfully.\n";
+}
 
-
+void loadData(const string & file_name){
+    ifstream fin(file_name);
+    if(!fin.is_open()){
+        cout<<"No existing data found";
+        return;
+    }
+    branches.clear();
+    int branchCount;
+    fin>>branchCount;
+    fin.ignore();
+    while(branchCount--){
+        Branch br;
+        getline(fin, br.name);
+        int studentCount;
+        fin>>studentCount;
+        fin.ignore();
+        while(studentCount--){
+            Student s;
+            getline(fin, s.name);
+            fin>>s.roll;
+            int semCount;
+            fin>>semCount;
+            fin.ignore();
+            while(semCount--){
+                Semester sem;
+                fin>>sem.sem_no;
+                int courseCount;
+                fin>>courseCount;
+                fin.ignore();
+                while(courseCount--){
+                    Course c;
+                    getline(fin, c.name);
+                    fin>>c.marks>>c.credit;
+                    fin.ignore();
+                    sem.courses.push_back(c);
+                }
+                sem.calculateSPI();
+                s.semesters.push_back(sem);
+            }
+            s.recalculateAll();
+            br.students.push_back(s);
+        }
+        branches.push_back(br);
+    }
+    cout<<"Data loaded Successfully.\n";
+}
 
 
 int main() {
+    loadData("data_backup.txt");
+
     int choice;
     do {
         showMenu();
@@ -489,7 +583,7 @@ int main() {
         switch(choice) {
             case 1: add_branch(); break;
             case 2: register_student(); break;
-            case 3: addSemCourse(); break;
+            case 3: addSemCourse(); break;  
             case 4: updateMarks(); break;
             case 5: deleteCourse(); break;
             case 6: removeStudent(); break;
@@ -502,6 +596,7 @@ int main() {
             default: cout << "Invalid choice. Try again.\n";
         }
     } while(choice != 0);
-
+    saveData("data_backup.txt");
+    cout << "Exiting...\n";
     return 0;
 }
